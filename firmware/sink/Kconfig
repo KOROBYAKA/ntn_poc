@@ -1,0 +1,21 @@
+config CARRIER
+	int "DECT NR+ carrier"
+	default 1657
+
+config NETWORK_ID
+	int "DECT NR+ network ID"
+	range 1 4294967295
+	default 91
+
+config MCS
+	int "DECT NR+ MCS"
+	default 1
+
+config TX_POWER
+	int "DECT NR+ TX power"
+	range 0 13
+	default 13
+
+menu "Zephyr Kernel"
+source "Kconfig.zephyr"
+endmenu
