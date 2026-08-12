@@ -2,6 +2,37 @@ import time
 import queue
 import serial
 
+def create_ip_packet(
+    msg: str,
+    target_ip: str,
+    target_port: int,
+    socket_handle: int = 0,
+    wait_ack: bool = True,
+) -> str:
+    """
+    Create AT command for sending UDP/IP payload over already configured NTN PDN.
+
+    This does not create a real IP packet.
+    It creates Serial Modem AT command:
+    AT#XSENDTO=<handle>,<mode>,<flags>,"<ip>",<port>,"<payload>"
+    """
+
+    # NTN radio-level async acknowledgment flag.
+    # 8192 means modem should emit #XSENDNTF when uplink is acknowledged.
+    flags = 8192 if wait_ack else 0
+
+    # Keep payload one-line and avoid breaking AT command string.
+    payload = str(msg).strip()
+
+    # Minimal escaping for AT string arguments.
+    payload = payload.replace("\\", "\\\\").replace('"', '\\"')
+
+    return (
+        f'AT#XSENDTO={socket_handle},0,{flags},'
+        f'"{target_ip}",{target_port},"{payload}"'
+    )
+
+
 def send_at(ser: serial.Serial, command: str, delay_s: float = 0.2) -> None:
     '''
     Minimal AT sender.
@@ -83,4 +114,13 @@ def at_commander(commander_target_device_path: str, target_ip:str, target_port:i
         )
         while True:
             msg = rx_queue.get()
-            send_at(ser, msg)
+
+            cmd = create_ip_packet(
+                msg=msg,
+                target_ip=target_ip,
+                target_port=target_port,
+                socket_handle=0,
+                wait_ack=True,
+            )
+            send_at(ser, cmd)
+
