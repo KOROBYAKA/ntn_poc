@@ -12,7 +12,7 @@ static void on_dect_rx(
 	int16_t rssi_2)
 {
 	printk(
-		"DECT RX: len=%u, RSSI2=%d, data: ",
+		"DECT RX: len:%u RSSI2:%d data:",
 		(unsigned int)len,
 		rssi_2
 	);

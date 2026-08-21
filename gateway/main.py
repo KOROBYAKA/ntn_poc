@@ -10,7 +10,7 @@ def main():
     threads = []
 
 # SETUP UART_READER thread
-    uart_reader_device_path = "/dev/pts/8"
+    uart_reader_device_path = "/dev/ttyACM2"
     uart_handler_queue = queue.Queue(100)
     baudrate = 115200
     #timer is optional for the thread main function
@@ -26,7 +26,7 @@ def main():
     threads.append(handler_thread)
 
 # SETUP AT_COMMANDER thread
-    commander_target_device_path = "/dev/pts/5"
+    commander_target_device_path = "/dev/pts/4"
     target_ip = "127.0.0.1"
     target_port = 9000
     baudrate_AT = 115200
