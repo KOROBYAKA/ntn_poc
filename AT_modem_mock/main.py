@@ -30,6 +30,8 @@ def parse_AT_cmd(cmd: str):
         "data": parsed_payload,
     }
 
+
+
 def main():
     sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
@@ -40,8 +42,12 @@ def main():
             send_data = parse_AT_cmd(msg)
             if send_data is None:
                 continue
-            print(send_data)
-
+            print(f"AT_modem_mock::send_data: {send_data}")
+            if send_data["cmd"] == "AT#XSENDTO":
+                ip = send_data["ip"]
+                port = send_data["dst_port"]
+                data = str(send_data["data"])
+                sock.sendto(data.encode(), (ip, port))
 
 if __name__ == "__main__":
     main()

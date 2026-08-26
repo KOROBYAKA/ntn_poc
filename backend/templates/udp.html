@@ -24,6 +24,10 @@
                 <th>Sink</th>
                 <th>Sense</th>
                 <th>Message</th>
+                <th>Packet timestamp</th>
+                <th>RSSI</th>
+                <th>First 8 bytes</th>
+                <th>Data</th>
             </tr>
         </thead>
         <tbody>
@@ -34,6 +38,10 @@
                 <td>{{ row["sink_id"] }}</td>
                 <td>{{ row["sense_id"] }}</td>
                 <td>{{ row["msg"] }}</td>
+                <td>{{ row["timestamp"] }}</td>
+                <td>{{ row["rssi"] }}</td>
+                <td>{{ row["first_8_bytes"] }}</td>
+                <td>{{ row["data"] }}</td>
             </tr>
         {% endfor %}
         </tbody>
