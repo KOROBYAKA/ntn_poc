@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 import json
+from datetime import datetime
 from pathlib import Path
 
 DB_PATH = Path(__file__).with_name("data.db")
@@ -48,8 +49,11 @@ def ensure_column(conn: sqlite3.Connection, name: str, definition: str) -> None:
 def insert_message(sink_id: str, sense_id: str, msg: str) -> None:
     with get_connection() as conn:
         conn.execute(
-            "INSERT INTO udp_messages (sink_id, sense_id, msg) VALUES (?, ?, ?)",
-            (sink_id, sense_id, msg),
+            """
+            INSERT INTO udp_messages (received_at, sink_id, sense_id, msg)
+            VALUES (?, ?, ?, ?)
+            """,
+            (local_received_at(), sink_id, sense_id, msg),
         )
 
 
@@ -63,11 +67,25 @@ def insert_packet(
         conn.execute(
             """
             INSERT INTO udp_messages
-                (sink_id, sense_id, msg, timestamp, rssi, first_8_bytes, data)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (received_at, sink_id, sense_id, msg, timestamp, rssi, first_8_bytes, data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            ("", "", "", timestamp, rssi, first_8_bytes, json.dumps(data)),
+            (
+                local_received_at(),
+                "",
+                "",
+                "",
+                timestamp,
+                rssi,
+                first_8_bytes,
+                json.dumps(data),
+            ),
         )
+
+
+def local_received_at() -> str:
+    """Return the receiving server's local timestamp with its UTC offset."""
+    return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def get_messages() -> list[sqlite3.Row]:
