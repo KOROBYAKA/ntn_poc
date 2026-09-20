@@ -96,7 +96,7 @@ def at_commander(
                             "travel_time": msg.travel_time,
                             "data": msg.data.hex(),
                         }
-                        
+
                         payload = json.dumps(
                             backend_payload,
                             separators=(",", ":"),
