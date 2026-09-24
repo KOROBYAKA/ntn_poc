@@ -21,3 +21,9 @@ serial==0.0.97
 starlette==1.6.0
 typing-inspection==0.4.4
 typing_extensions==4.16.0
+Levenshtein==0.27.5
+pydbus==0.6.0
+pygi==1.0.3
+pyserial==3.5
+python-Levenshtein==0.27.5
+RapidFuzz==3.14.6

@@ -46,7 +46,7 @@ def at_commander(
         timeout=timeout,
     ) as ser:
 
-        socket_handle = None
+        socket_handle = 1
 
         try:
             print("[AT] Starting NTN initialization")
@@ -92,8 +92,8 @@ def at_commander(
                         backend_payload = {
                             "src": msg.src,
                             "gw_rx_timestamp":
-                                msg.gw_rx_timestamp,
-                            "travel_time": msg.travel_time,
+                                msg.gw_rx_timestamp_ms,
+                            "travel_time": msg.travel_time_ms,
                             "data": msg.data.hex(),
                         }
 

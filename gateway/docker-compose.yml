@@ -1,0 +1,29 @@
+services:
+  ntn-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: ntn-service
+
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+
+    group_add:
+      - "${SERIAL_GID:-20}"
+
+    cap_add:
+      - SYS_TIME
+
+    environment:
+      PYTHONUNBUFFERED: "1"
+
+      DBUS_SOCKET: "/var/run/dbus/system_bus_socket"
+      DBUS_SERVICE: "com.wirepas.sink.sink1"
+
+      NTN_DEVICE: "/dev/ntn_modem"
+      NTN_TARGET_IP: "${NTN_TARGET_IP:-127.0.0.1}"
+      NTN_TARGET_PORT: "${NTN_TARGET_PORT:-9000}"
+      NTN_BAUDRATE: "${NTN_BAUDRATE:-115200}"
+      NTN_APN: "${NTN_APN:-skylo.ip}"
+
+      NTP_SERVER: "${NTP_SERVER:-192.168.1.100}"

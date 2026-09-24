@@ -109,8 +109,8 @@ class DbusConnector(threading.Thread):
             print(
                 f"[DBUS] ACCEPT "
                 f"src={packet.src} "
-                f"gw_rx_timestamp={packet.gw_rx_timestamp} "
-                f"travel_time={packet.travel_time} ms "
+                f"gw_rx_timestamp_ms={packet.gw_rx_timestamp_ms} "
+                f"travel_time={packet.travel_time_ms} ms "
                 f"len={len(packet.data)}"
             )
         )

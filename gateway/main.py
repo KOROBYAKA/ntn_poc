@@ -1,37 +1,134 @@
+import os
+import threading
+import queue
+import time
+import ntplib
+
 from at_commander import at_commander
 from dbus_connector import DbusConnector
 
-import threading
-import queue
+def measure_ntp_offset(
+    ntp_server: str,
+    samples_count: int = 20,
+    timeout: float = 2.0,
+) -> dict:
+
+    client = ntplib.NTPClient()
+    samples = []
+
+    for i in range(samples_count):
+        response = client.request(
+            ntp_server,
+            version=4,
+            timeout=timeout,
+        )
+
+        sample = {
+            "sample": i,
+            "delay": response.delay,
+            "offset": response.offset,
+            "stratum": response.stratum,
+            "tx_time": response.tx_time,
+            "dest_time": response.dest_time,
+        }
+
+        samples.append(sample)
+
+        print(
+            f"[NTP] sample={i:02d} "
+            f"delay={sample['delay'] * 1000:.3f} ms "
+            f"offset={sample['offset'] * 1000:.3f} ms"
+        )
+
+    best_sample = min(
+        samples,
+        key=lambda sample: sample["delay"],
+    )
+
+    print(
+        f"[NTP] Best sample: "
+        f"delay={best_sample['delay'] * 1000:.3f} ms, "
+        f"offset={best_sample['offset'] * 1000:.3f} ms"
+    )
+
+    return best_sample
+
+def apply_clock_offset(offset: float) -> None:
+    current_time = time.clock_gettime(
+        time.CLOCK_REALTIME
+    )
+
+    corrected_time = current_time + offset
+
+    print(
+        f"[NTP] Applying clock offset: "
+        f"{offset * 1000:.3f} ms"
+    )
+
+    time.clock_settime(
+        time.CLOCK_REALTIME,
+        corrected_time,
+    )
+
+
+
+
+
 
 
 def main():
-    # AT Commander configuration
-    commander_target_device_path = "/dev/pts/4"
-    target_ip = "127.0.0.1"
-    target_port = 9000
-    baudrate_at = 115200
 
-    # Wirepas D-Bus configuration
-    bus_socket = "/var/run/dbus/system_bus_socket"
-    service_name = "com.wirepas.sink.sink1"
 
-    # Shared IPC between D-Bus connector and AT Commander.
-    #
-    # Only one packet may ever wait for AT Commander.
+
+
+    commander_target_device_path = os.getenv(
+        "NTN_DEVICE",
+        "/dev/ntn_modem",
+    )
+
+    target_ip = os.getenv(
+        "NTN_TARGET_IP",
+        "127.0.0.1",
+    )
+
+    target_port = int(
+        os.getenv("NTN_TARGET_PORT", "9000")
+    )
+
+    baudrate_at = int(
+        os.getenv("NTN_BAUDRATE", "115200")
+    )
+
+    apn = os.getenv(
+        "NTN_APN",
+        "skylo.ip",
+    )
+
+    bus_socket = os.getenv(
+        "DBUS_SOCKET",
+        "/var/run/dbus/system_bus_socket",
+    )
+
+    service_name = os.getenv(
+        "DBUS_SERVICE",
+        "com.wirepas.sink.sink1",
+    )
+
+    best_sample = measure_ntp_offset(
+        ntp_server=ntp_server,
+    )
+
+    apply_clock_offset(
+        best_sample["offset"]
+    )
+
+    print("NTP Synchronization is done\n\n###################################\n\n\n")
+
     msg_queue = queue.Queue(maxsize=1)
 
-    # Shared state:
-    #
-    # LOCKED   -> AT Commander busy / not initialized
-    # UNLOCKED -> AT Commander ready for one packet
     commander_lock = threading.Lock()
-
-    # Initially AT Commander is NOT ready.
-    # It will release this lock after NTN initialization.
     commander_lock.acquire()
 
-    # AT Commander runs as its own worker thread.
     commander_thread = threading.Thread(
         target=at_commander,
         name="at-commander",
@@ -42,10 +139,10 @@ def main():
             msg_queue,
             commander_lock,
             baudrate_at,
+            apn,
         ),
     )
 
-    # DbusConnector already inherits from threading.Thread.
     dbus_thread = DbusConnector(
         bus_socket=bus_socket,
         service_name=service_name,
@@ -56,8 +153,6 @@ def main():
     commander_thread.start()
     dbus_thread.start()
 
-    # AT Commander is currently the main worker whose lifetime
-    # determines the lifetime of the application.
     commander_thread.join()
 
 
