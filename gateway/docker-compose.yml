@@ -14,6 +14,10 @@ services:
     cap_add:
       - SYS_TIME
 
+    devices:
+      - "${NTN_DEVICE_HOST:-/dev/ttyACM2}:/dev/ntn_modem"
+
+
     environment:
       PYTHONUNBUFFERED: "1"
 
