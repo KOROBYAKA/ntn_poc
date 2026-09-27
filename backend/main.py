@@ -98,17 +98,73 @@ def save_packet_payload(body: str, backend_timestamp: str) -> dict:
 
     return payload
 
-
 def parse_packet_payload(body: str) -> dict:
+    body = body.strip()
+    print(f"MSG_RX:{body}")
+    if not (body.startswith("{") and body.endswith("}")):
+        raise ValueError("packet must be enclosed in { }")
+
+    fields = {}
+    inner = body[1:-1].strip()
+
+    for item in inner.split(","):
+        if ":" not in item:
+            raise ValueError(f"invalid field: {item}")
+
+        key, value = item.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+
+        if not key or not value:
+            raise ValueError(f"invalid field: {item}")
+        if key in fields:
+            raise ValueError(f"duplicate field: {key}")
+
+        fields[key] = value
+
+    required = {
+        "src",
+        "gw_rx_timestamp",
+        "travel_time",
+        "data",
+    }
+
+    missing = required - fields.keys()
+    extra = fields.keys() - required
+
+    if missing:
+        raise ValueError(
+            f"missing fields: {', '.join(sorted(missing))}"
+        )
+
+    if extra:
+        raise ValueError(
+            f"unknown fields: {', '.join(sorted(extra))}"
+        )
+
     try:
-        payload = json.loads(body)
-    except json.JSONDecodeError:
-        payload = ast.literal_eval(body)
+        src = int(fields["src"])
+        gw_rx_timestamp = int(fields["gw_rx_timestamp"])
+        travel_time = int(fields["travel_time"])
+    except ValueError as exc:
+        raise ValueError(
+            "src, gw_rx_timestamp and travel_time must be integers"
+        ) from exc
 
-    if not isinstance(payload, dict):
-        raise ValueError("payload must be an object")
+    data = fields["data"]
 
-    return payload
+    if not re.fullmatch(r"[0-9a-fA-F]+", data):
+        raise ValueError("data must be a hex string")
+
+    if len(data) % 2 != 0:
+        raise ValueError("data hex string must contain full bytes")
+
+    return {
+        "src": src,
+        "gw_rx_timestamp": gw_rx_timestamp,
+        "travel_time": travel_time,
+        "data": data,
+    }
 
 
 def run_ingest_server() -> None:
