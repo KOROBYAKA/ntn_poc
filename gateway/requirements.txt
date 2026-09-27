@@ -27,3 +27,4 @@ pygi==1.0.3
 pyserial==3.5
 python-Levenshtein==0.27.5
 RapidFuzz==3.14.6
+ntplib==0.4.0
