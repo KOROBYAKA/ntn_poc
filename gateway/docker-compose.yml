@@ -17,7 +17,6 @@ services:
     devices:
       - "${NTN_DEVICE_HOST:-/dev/ttyACM2}:/dev/ntn_modem"
 
-
     environment:
       PYTHONUNBUFFERED: "1"
 
@@ -31,3 +30,12 @@ services:
       NTN_APN: "${NTN_APN:-skylo.ip}"
 
       NTP_SERVER: "${NTP_SERVER:-192.168.1.100}"
+
+    volumes:
+      - wirepas-dbus:/var/run/dbus
+
+
+volumes:
+  wirepas-dbus:
+    external: true
+    name: single_transport_dbus-volume
