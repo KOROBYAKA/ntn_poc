@@ -86,20 +86,12 @@ def at_commander(
                     print("[AT] Packet received from D-Bus")
                     print("[AT] Starting NTN transmission")
 
-                    # If dbus_connector passes a WirepasPacket object,
-                    # extract its payload.
                     if hasattr(msg, "data"):
-                        backend_payload = {
-                            "src": msg.src,
-                            "gw_rx_timestamp":
-                                msg.gw_rx_timestamp_ms,
-                            "travel_time": msg.travel_time_ms,
-                            "data": msg.data.hex(),
-                        }
-
-                        payload = json.dumps(
-                            backend_payload,
-                            separators=(",", ":"),
+                        payload = (
+                            f"{{src:{msg.src},"
+                            f"gw_rx_timestamp:{msg.gw_rx_timestamp_ms},"
+                            f"travel_time:{msg.travel_time_ms},"
+                            f"data:{msg.data.hex()}}}"
                         )
 
                         print(payload)
@@ -158,31 +150,23 @@ def create_ip_packet(
     Create AT command for sending UDP/IP payload over
     an already configured NTN PDN.
 
-    This does not create a real IP packet. The modem creates
-    the UDP/IP packet internally.
+    Expected payload example:
+    {src:1430875590,gw_rx_timestamp:1790529857355,travel_time:23,data:000601...}
     """
 
-    # Request asynchronous NTN send notification.
     flags = 8192 if wait_ack else 0
 
     if isinstance(msg, bytes):
-        # Do not silently turn bytes into "b'...'"
-        # because that would change the actual application payload.
         try:
             payload = msg.decode("utf-8")
         except UnicodeDecodeError as exc:
             raise ValueError(
-                "Wirepas payload is binary and cannot be sent "
-                "as the current text-based AT payload. "
-                "Define an explicit binary encoding first."
+                "Payload must be valid UTF-8 for AT string mode."
             ) from exc
     else:
         payload = str(msg)
 
     payload = payload.strip()
-
-    # Escape characters significant inside the quoted AT argument.
-    payload = payload.replace("\\", "\\\\").replace('"', '\\"')
 
     return (
         f'AT#XSENDTO={socket_handle},0,{flags},'
@@ -211,6 +195,7 @@ def send_at(
     ser: serial.Serial,
     command: str,
     timeout_s: float = 5.0,
+    error_allowed: bool = False,
 ) -> list[str]:
 
     print(f">> {command}")
@@ -235,14 +220,21 @@ def send_at(
             return response_lines
 
         if (
-            line == "ERROR"
-            or line.startswith("+CME ERROR")
-            or line.startswith("+CMS ERROR")
+                line == "ERROR"
+                or line.startswith("+CME ERROR")
+                or line.startswith("+CMS ERROR")
         ):
+            if error_allowed:
+                print(
+                    f"ERROR_ALLOWED_MODE:: "
+                    f"AT command failed: {command}: {line}"
+                )
+                response_lines.append(line)
+                return response_lines
+
             raise RuntimeError(
                 f"AT command failed: {command}: {line}"
             )
-
         # Information responses and asynchronous URCs can appear
         # before the final OK.
         response_lines.append(line)
