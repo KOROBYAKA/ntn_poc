@@ -3,7 +3,7 @@ import socket
 import re
 import json
 
-SERIAL_TARGET = "/dev/pts/3"
+SERIAL_TARGET = "/dev/pts/2"
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 5005
