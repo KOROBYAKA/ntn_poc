@@ -42,5 +42,5 @@ def main():
     print("Clock synchronized.")
 
 
-if name == "main":
+if __name__ == "__main__":
     main()
