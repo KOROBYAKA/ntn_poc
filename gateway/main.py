@@ -2,74 +2,9 @@ import os
 import threading
 import queue
 import time
-import ntplib
 
 from at_commander import at_commander
 from dbus_connector import DbusConnector
-
-def measure_ntp_offset(
-    ntp_server: str,
-    samples_count: int = 20,
-    timeout: float = 2.0,
-) -> dict:
-
-    client = ntplib.NTPClient()
-    samples = []
-
-    for i in range(samples_count):
-        response = client.request(
-            ntp_server,
-            version=4,
-            timeout=timeout,
-        )
-
-        sample = {
-            "sample": i,
-            "delay": response.delay,
-            "offset": response.offset,
-            "stratum": response.stratum,
-            "tx_time": response.tx_time,
-            "dest_time": response.dest_time,
-        }
-
-        samples.append(sample)
-
-        print(
-            f"[NTP] sample={i:02d} "
-            f"delay={sample['delay'] * 1000:.3f} ms "
-            f"offset={sample['offset'] * 1000:.3f} ms"
-        )
-
-    best_sample = min(
-        samples,
-        key=lambda sample: sample["delay"],
-    )
-
-    print(
-        f"[NTP] Best sample: "
-        f"delay={best_sample['delay'] * 1000:.3f} ms, "
-        f"offset={best_sample['offset'] * 1000:.3f} ms"
-    )
-
-    return best_sample
-
-def apply_clock_offset(offset: float) -> None:
-    current_time = time.clock_gettime(
-        time.CLOCK_REALTIME
-    )
-
-    corrected_time = current_time + offset
-
-    print(
-        f"[NTP] Applying clock offset: "
-        f"{offset * 1000:.3f} ms"
-    )
-
-    time.clock_settime(
-        time.CLOCK_REALTIME,
-        corrected_time,
-    )
-
 
 
 
@@ -77,9 +12,6 @@ def apply_clock_offset(offset: float) -> None:
 
 
 def main():
-
-
-
 
     commander_target_device_path = os.getenv(
         "NTN_DEVICE",
@@ -113,16 +45,6 @@ def main():
         "DBUS_SERVICE",
         "com.wirepas.sink.sink1",
     )
-
-    best_sample = measure_ntp_offset(
-        ntp_server=ntp_server,
-    )
-
-    apply_clock_offset(
-        best_sample["offset"]
-    )
-
-    print("NTP Synchronization is done\n\n###################################\n\n\n")
 
     msg_queue = queue.Queue(maxsize=1)
 
